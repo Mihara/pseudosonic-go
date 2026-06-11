@@ -95,6 +95,8 @@ func MakeSquare(img image.Image) image.Image {
 		side = height
 	}
 
+	log.Printf("image type: %T\n", img)
+
 	background := imaging.New(side, side, color.Black)
 	return imaging.OverlayCenter(background, img, 1.0)
 }
@@ -127,21 +129,22 @@ func saveToImage(img image.Image, path string, square bool) error {
 	}()
 
 	ext := strings.ToLower(filepath.Ext(path))
+	imgToSave := img
 
 	if square {
-		img = MakeSquare(img)
+		imgToSave = MakeSquare(img)
 	}
 
 	var encodeErr error
 	switch ext {
 	case ".png":
-		encodeErr = png.Encode(tmpf, img)
+		encodeErr = png.Encode(tmpf, imgToSave)
 	case ".jpg", ".jpeg":
-		encodeErr = jpeg.Encode(tmpf, img, &jpeg.Options{Quality: 95})
+		encodeErr = jpeg.Encode(tmpf, imgToSave, &jpeg.Options{Quality: 95})
 	case ".webp":
-		encodeErr = webp.Encode(tmpf, img, &webp.Options{CompressionLevel: 6})
+		encodeErr = webp.Encode(tmpf, imgToSave, &webp.Options{CompressionLevel: 6})
 	case ".bmp":
-		encodeErr = bmp.Encode(tmpf, img)
+		encodeErr = bmp.Encode(tmpf, imgToSave)
 	default:
 		return fmt.Errorf("unsupported file extension: %s", ext)
 	}
