@@ -35,9 +35,14 @@ jobs:
         echo "Building $output..."
         GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="-s -w" -o $output
 
+    - name: Create archive
+      run: |
+        cd bin/${{ matrix.goos }}_${{ matrix.goarch }}
+        zip -r ../pseudosonic-go-${{ matrix.goos }}-${{ matrix.goarch }}.zip .
+
     - name: Upload binaries to release
       uses: softprops/action-gh-release@v3
       with:
-        files: bin/${{ matrix.goos }}_${{ matrix.goarch }}/*
+        files: bin/pseudosonic-go-${{ matrix.goos }}-${{ matrix.goarch }}.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
