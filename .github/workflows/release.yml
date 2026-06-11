@@ -32,8 +32,9 @@ jobs:
         echo "Building $output..."
         GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="-s -w" -o $output
 
-    - name: Upload binaries
-      uses: actions/upload-artifact@v7
+    - name: Upload binaries to release
+      uses: softprops/action-gh-release@v3
       with:
-        name: pseudosonic-go-${{ matrix.goos }}-${{ matrix.goarch }}
-        path: bin/${{ matrix.goos }}_${{ matrix.goarch }}/*
+        files: bin/${{ matrix.goos }}_${{ matrix.goarch }}/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
