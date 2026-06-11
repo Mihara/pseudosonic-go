@@ -78,14 +78,24 @@ func fetchProfile(
 
 		log.Printf("collecting playlist '%s'\n", playlist)
 
-		playlist, err := client.GetPlaylist(playlist)
+		playlists, err := client.GetPlaylists(map[string]string{})
 		if err != nil {
-			log.Fatalf("failed when getting playlist: %v", err)
+			log.Fatalf("failed when requesting playlists: %v", err)
 		}
 
-		for _, song := range playlist.Entry {
-			fetchSong(song)
+		for _, playlistItem := range playlists {
+			if playlistItem.Name == playlist {
+				thatPlaylist, err := client.GetPlaylist(playlistItem.ID)
+				if err != nil {
+					log.Fatalf("failed when retreiving playlist %s: %v", playlist, err)
+				}
+				for _, song := range thatPlaylist.Entry {
+					fetchSong(song)
+				}
+				break
+			}
 		}
+
 	}
 
 	return songs
