@@ -119,8 +119,13 @@ func downloadSongs(
 	targetFormat := profile.Key("format").MustString("mp3")
 	targetBitrate := profile.Key("bitrate").MustInt(128)
 
-	log.Printf("target format: %s, target bitrate: %d, overwrite existing: %t\n", targetFormat, targetBitrate, overwrite)
-	log.Printf("save cover art: %t, cover art filename: %s, size: %d\n", coverArt, coverArtFile, coverArtSize)
+	log.Printf("target format: %s, target bitrate: %d kbps, overwrite existing: %t\n", targetFormat, targetBitrate, overwrite)
+
+	log.Printf("save cover art: %t\n", coverArt)
+
+	if coverArt {
+		log.Printf("coerce cover to square: %t, cover art filename: %s, max size: %d px\n", coverSquare, coverArtFile, coverArtSize)
+	}
 
 	maxBitrate := 0
 	supportedFormats := []string{}
@@ -128,8 +133,10 @@ func downloadSongs(
 	maxBitrate = profile.Key("max_bitrate").MustInt(0)
 	supportedFormats = profile.Key("supported_formats").Strings(",")
 
+	log.Printf("maximum untouched bitrate: %d kbps\n", maxBitrate)
+
 	if maxBitrate > 0 {
-		log.Printf("supported formats: %s. maximum untouched bitrate: %d", strings.Join(supportedFormats, ", "), maxBitrate)
+		log.Printf("supported formats: %s.\n", strings.Join(supportedFormats, ", "))
 	}
 
 	// Iterate in sorted order.

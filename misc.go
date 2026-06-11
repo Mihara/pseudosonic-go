@@ -95,8 +95,6 @@ func MakeSquare(img image.Image) image.Image {
 		side = height
 	}
 
-	log.Printf("image type: %T\n", img)
-
 	background := imaging.New(side, side, color.Black)
 	return imaging.OverlayCenter(background, img, 1.0)
 }
