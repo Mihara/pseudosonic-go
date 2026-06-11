@@ -30,7 +30,7 @@ jobs:
           output="${output}.exe"
         fi
         echo "Building $output..."
-        GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="-s -w" -o $output main.go
+        GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="-s -w" -o $output
 
     - name: Upload binaries
       uses: actions/upload-artifact@v4
