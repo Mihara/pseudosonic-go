@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/chai2010/webp"
+	webp "github.com/HugoSmits86/nativewebp"
 	"github.com/disintegration/imaging"
 	"github.com/flytam/filenamify"
 	"golang.org/x/image/bmp"
@@ -139,7 +139,7 @@ func saveToImage(img image.Image, path string, square bool) error {
 	case ".jpg", ".jpeg":
 		encodeErr = jpeg.Encode(tmpf, img, &jpeg.Options{Quality: 95})
 	case ".webp":
-		encodeErr = webp.Encode(tmpf, img, &webp.Options{Quality: 95})
+		encodeErr = webp.Encode(tmpf, img, &webp.Options{CompressionLevel: 6})
 	case ".bmp":
 		encodeErr = bmp.Encode(tmpf, img)
 	default:
