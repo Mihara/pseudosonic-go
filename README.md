@@ -23,7 +23,7 @@ This version, rewritten from the ground up in Go, has the benefit of being much 
 
 ## Usage
 
-1. Copy `config.ini.example` to `config.ini` and edit that. Most of the documentation is in fact in this file, since almost all of the program's functions are controlled through configuration. By default, the program looks for `config.ini` in current directory, but you can supply a different filename on command line.
+1. Copy `config.example.ini` to `config.ini` and edit that to fit your situation. Most of the documentation is in fact in this file, since almost all of the program's functions are controlled through configuration. By default, the program looks for `config.ini` in current directory, but you can supply a different filename on command line.
 2. Run and wait. The command is
 
 ```shell
