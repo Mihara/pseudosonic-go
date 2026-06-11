@@ -1,0 +1,118 @@
+# Server parameters go in the SERVER section.
+[SERVER]
+base_url: <full url goes here>
+# The URL should be the same as you see in your browser,
+# i.e. if it's on a non-default port, write it into the URL
+# the usual way.
+
+# Login information:
+username: user
+# Use triple quotes here, especially if your password contains any
+# special characters.
+password: """SekritPasswird"""
+
+# This option explicitly sets the number of simultaneous download/transcoding
+# operations that will be executed. By default, the value is equal to the number
+# of cores in the machine running pseudosonic-go. You may want to tune it
+# so as to not overwhelm your server or bump into simultaneous transcode
+# limits as introduced in recent versions of Navidrome.
+#workers: 16
+
+# Named sections other than SERVER describe a download profile.
+# You can have multiple. If you don't give one on the command line,
+# all of them will be executed by default.
+
+[phone]
+
+#default: no
+# If this profile is not meant to be processed by default, uncomment this.
+# Then, you will only be able to invoke it by name on command line.
+
+#playlist: foo
+# By default, the source of songs for the profile is the logged in
+# user's favorites.
+# You can download the songs belonging to a given playlist instead,
+# for which you put the name of the playlist in this variable.
+
+#overwrite: yes
+# Whether to overwrite a file if a downloaded one already exists.
+# Defaults to no -- in which case the file is skipped.
+
+coverart: yes
+# Whether to download cover art into album directories.
+# Defaults to no.
+# When transcoding, this is unnecessary, since
+# ffmpeg will embed cover art during transcoding.
+# This is unfortunately not true if you wish to transcode to opus,
+# due to a long-standing deficiency in ffmpeg.
+# Some players may also ignore embedded cover art, but support
+# in-directory cover art.
+
+#coverart_size: 512
+# The default is 512.
+
+#coverart_file: cover.jpg
+# The default is cover.jpg.
+# Cover art will be converted into the format specified by the
+# file extension. jpg, png, webp and bmp are supported.
+
+#coverart_square: no
+# Whether the cover art image will be coerced to square,
+# by filling in empty spaces.
+# For some players this is required. Default is no.
+
+# Where the downloaded files go. Preferably a full path.
+music_dir: phone
+
+# The desired format and bitrate for when the transcoding
+# will happen. On consumer hardware, opus 128 is transparent.
+format: opus
+bitrate: 128
+
+# Whether transcoding happens at all depends on the value of
+# max_bitrate, which defaults to 0.
+# If max_bitrate is 0, files will always be transcoded, even when
+# this is probably a bad idea.
+# If max_bitrate is greater than 0, files which are in one of the
+# supported formats will be downloaded as is, instead of transcoded,
+# but only if their bitrate does not exceed max bitrate.
+
+max_bitrate: 160
+supported_formats: mp3,aac,m4a,ogg,opus,wma,mpc,flac,ape,wv,tta
+
+# Due to how bitrates are calculated on variable bitrate files,
+# you want to have max_bitrate slightly higher than the actual maximum
+# you wish to have your collection in.
+
+#### Here is an example profile for a FIIO Echo, audiophile mode.
+[player]
+
+default: no
+
+music_dir: player
+
+# When you have to transcode music at all, ogg is the best
+# non-lossless target FIIO Echo supports, and 256 kbit is the
+# bitrate at which it should be transparent for anything
+# but classical. If you play a lot of classical,
+# bump it to 320.
+# If you're a true blue audiophile who can
+# hear the difference, you don't need this program.
+format: ogg
+bitrate: 256
+
+# The list of supported formats for FIIO Echo is not very long.
+supported_formats: mp3,m4a,ogg,flac,ape,dsd
+
+# Losslessly encoded files, unless you encode them for bats,
+# will not exceed a bitrate of 1500, thus ensuring
+# that anything FIIO Echo can play at all will be downloaded
+# as is, while everything it can't play will become ogg 256.
+max_bitrate: 1500
+
+# For Echo, the recommended coverart format is like so:
+coverart: yes
+coverart_file: cover.jpg
+coverart_square: yes
+coverart_size: 500
+
