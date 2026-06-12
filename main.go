@@ -245,7 +245,10 @@ func downloadSongs(
 				if overwrite || !fileExists(lyricsFileName) {
 					lyricslist, err := client.GetLyricsBySongId(song.ID)
 					if err != nil {
-						log.Printf("failed when requesting song lyrics for %s: %v", songBaseName, err)
+						log.Printf(
+							"failed when requesting song lyrics for %s: %v",
+							songBaseName, err,
+						)
 						return err
 					}
 
@@ -260,13 +263,21 @@ func downloadSongs(
 							// not, the structure is the same, so we'll default
 							// to saving the lyrics with times as given.
 							if chunk.DisplayTitle != "" {
-								fmt.Fprintf(&lyricsBuffer, "[ti:%s]\n", chunk.DisplayTitle)
+								fmt.Fprintf(&lyricsBuffer,
+									"[ti:%s]\n",
+									chunk.DisplayTitle,
+								)
 							}
 							if chunk.DisplayArtist != "" {
-								fmt.Fprintf(&lyricsBuffer, "[ar:%s]\n", chunk.DisplayArtist)
+								fmt.Fprintf(&lyricsBuffer,
+									"[ar:%s]\n",
+									chunk.DisplayArtist,
+								)
 							}
 							for _, line := range chunk.Lines {
-								lyricsBuffer.WriteString(LRCStamp(line.Start + chunk.Offset))
+								lyricsBuffer.WriteString(
+									LRCStamp(line.Start + chunk.Offset),
+								)
 								lyricsBuffer.WriteString(line.Text)
 								lyricsBuffer.WriteString("\n")
 							}
