@@ -22,7 +22,7 @@ import (
 func getRequiredKey(cfg *ini.File, section, key string) string {
 	value := cfg.Section(section).Key(key).String()
 	if value == "" {
-		log.Fatalf("missing required key in [%s]: %s\n", section, key)
+		log.Fatalf("missing required key in [%s]: %s", section, key)
 	}
 	return value
 }
@@ -174,4 +174,11 @@ func legalize(s string) string {
 		MaxLength:   100,
 	})
 	return ns
+}
+
+func LRCStamp(ms int) string {
+	m := ms / 60000
+	s := (ms / 1000) % 60
+	cs := (ms / 10) % 100
+	return fmt.Sprintf("[%02d:%02d.%02d]", m, s, cs)
 }

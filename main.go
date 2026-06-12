@@ -76,7 +76,7 @@ func fetchProfile(
 
 	} else {
 
-		log.Printf("collecting playlist '%s'\n", playlist)
+		log.Printf("collecting playlist '%s'", playlist)
 
 		playlists, err := client.GetPlaylists(map[string]string{})
 		if err != nil {
@@ -106,6 +106,7 @@ func downloadSongs(
 	songs map[string]*subsonic.Child,
 	client *subsonic.Client,
 	poolSize int,
+	doLyrics bool,
 ) {
 	// So, new rules.
 
@@ -129,12 +130,17 @@ func downloadSongs(
 	targetFormat := profile.Key("format").MustString("mp3")
 	targetBitrate := profile.Key("bitrate").MustInt(128)
 
-	log.Printf("target format: %s, target bitrate: %d kbps, overwrite existing: %t\n", targetFormat, targetBitrate, overwrite)
+	log.Printf(
+		"target format: %s, target bitrate: %d kbps, overwrite existing: %t", targetFormat, targetBitrate, overwrite,
+	)
 
-	log.Printf("save cover art: %t\n", coverArt)
+	log.Printf("save cover art: %t", coverArt)
 
 	if coverArt {
-		log.Printf("coerce cover to square: %t, cover art filename: %s, max size: %d px\n", coverSquare, coverArtFile, coverArtSize)
+		log.Printf(
+			"coerce cover to square: %t, cover art filename: %s, max size: %d px",
+			coverSquare, coverArtFile, coverArtSize,
+		)
 	}
 
 	maxBitrate := 0
@@ -143,11 +149,16 @@ func downloadSongs(
 	maxBitrate = profile.Key("max_bitrate").MustInt(0)
 	supportedFormats = profile.Key("supported_formats").Strings(",")
 
-	log.Printf("maximum untouched bitrate: %d kbps\n", maxBitrate)
+	log.Printf("maximum untouched bitrate: %d kbps", maxBitrate)
 
 	if maxBitrate > 0 {
-		log.Printf("supported formats: %s.\n", strings.Join(supportedFormats, ", "))
+		log.Printf(
+			"supported formats: %s.",
+			strings.Join(supportedFormats, ", "),
+		)
 	}
+
+	log.Printf("will save lyrics: %t", doLyrics)
 
 	// Iterate in sorted order.
 	// We actually only needed a map in case
@@ -188,12 +199,14 @@ func downloadSongs(
 				ext = song.Suffix
 			}
 
-			songFileName := legalize(fmt.Sprintf(
+			songBaseName := legalize(fmt.Sprintf(
 				"%02d-%02d %s",
 				song.DiscNumber,
 				song.Track,
 				song.Title,
-			)) + "." + ext
+			))
+
+			songFileName := songBaseName + "." + ext
 
 			songFile := filepath.Join(songPath, songFileName)
 
@@ -221,6 +234,49 @@ func downloadSongs(
 			if err = saveToFile(rc, songFile); err != nil {
 				log.Printf("failed to write song to file %s: %v", songFile, err)
 				return err
+			}
+
+			// Write lyrics if available and configured to.
+			if doLyrics {
+
+				lyricsFileName := filepath.Join(songPath, songBaseName+".lrc")
+
+				if overwrite || !fileExists(lyricsFileName) {
+					lyricslist, err := client.GetLyricsBySongId(song.ID)
+					if err != nil {
+						log.Printf("failed when requesting song lyrics for %s: %v", songBaseName, err)
+						return err
+					}
+
+					if lyricslist.StructuredLyrics != nil {
+						var lyricsBuffer strings.Builder
+
+						// Now let's try to rebuild them into an lrc file.
+						// For now, ignore all responses but the first.
+						if len(lyricslist.StructuredLyrics) > 0 {
+							chunk := lyricslist.StructuredLyrics[0]
+							// Regardless of whether the lyrics are synced or
+							// not, the structure is the same, so we'll default
+							// to saving the lyrics with times as given.
+							if chunk.DisplayTitle != "" {
+								fmt.Fprintf(&lyricsBuffer, "[ti:%s]\n", chunk.DisplayTitle)
+							}
+							if chunk.DisplayArtist != "" {
+								fmt.Fprintf(&lyricsBuffer, "[ar:%s]\n", chunk.DisplayArtist)
+							}
+							for _, line := range chunk.Lines {
+								lyricsBuffer.WriteString(LRCStamp(line.Start + chunk.Offset))
+								lyricsBuffer.WriteString(line.Text)
+								lyricsBuffer.WriteString("\n")
+							}
+						}
+						log.Printf("saving %s\n", lyricsFileName)
+						saveToFile(
+							io.NopCloser(strings.NewReader(lyricsBuffer.String())),
+							lyricsFileName,
+						)
+					}
+				}
 			}
 
 			// Now handle cover art.
@@ -307,6 +363,20 @@ func main() {
 		log.Printf("server version: %s, status: %s\n", ping.Version, ping.Status)
 	}
 
+	lyricsSupported := false
+
+	// If err is not nil, extensions are not supported.
+	if extensions, err := client.GetOpenSubsonicExtensions(); err == nil {
+		if slices.IndexFunc(extensions,
+			func(e *subsonic.OpenSubsonicExtension) bool {
+				return e.Name == "songLyrics"
+			}) >= 0 {
+			lyricsSupported = true
+		}
+	}
+
+	log.Printf("has lyrics support: %t\n", lyricsSupported)
+
 	poolSize := cfg.Section("SERVER").Key("workers").MustInt(
 		runtime.NumCPU(),
 	)
@@ -329,7 +399,10 @@ func main() {
 		log.Printf("executing profile: %s\n", profile.Name())
 
 		songs := fetchProfile(profile, &client)
-		downloadSongs(profile, songs, &client, poolSize)
+
+		doLyrics := lyricsSupported && profile.Key("lrc_lyrics").MustBool(false)
+
+		downloadSongs(profile, songs, &client, poolSize, doLyrics)
 
 	}
 
