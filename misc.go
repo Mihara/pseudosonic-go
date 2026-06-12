@@ -167,12 +167,19 @@ func saveToImage(img image.Image, path string, square bool) error {
 // Legalize a filename by replacing characters and sequences
 // illegal in filenames by underscores and trimming the length
 // down to reasonable.
+// NB: Be careful to only use this on whole path components
+// before adding extensions.
 func legalize(s string) string {
 	// Ironically, err is always nil if the options are correct.
 	ns, _ := filenamify.Filenamify(s, filenamify.Options{
 		Replacement: "_",
 		MaxLength:   100,
 	})
+	// Also, on FAT, file and directory
+	// names cannot end in a period...
+	if strings.HasSuffix(ns, ".") {
+		return ns[:len(ns)-1] + "_"
+	}
 	return ns
 }
 
