@@ -175,12 +175,15 @@ func legalize(s string) string {
 		Replacement: "_",
 		MaxLength:   100,
 	})
+
 	// Also, on FAT, file and directory
 	// names cannot end in a period...
-	if strings.HasSuffix(ns, ".") {
-		return ns[:len(ns)-1] + "_"
+	runes := []rune(ns)
+	if len(runes) > 0 && runes[len(runes)-1] == '.' {
+		runes[len(runes)-1] = '_'
 	}
-	return ns
+
+	return string(runes)
 }
 
 func LRCStamp(ms int) string {
