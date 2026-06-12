@@ -207,7 +207,7 @@ func downloadSongs(
 				song.Title,
 			))
 
-			songFileName := songBaseName + "." + ext
+			songFileName := fmt.Sprintf("%s.%s", songBaseName, ext)
 
 			songFile := filepath.Join(songPath, songFileName)
 
