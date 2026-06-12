@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"cmp"
 	"flag"
 	"fmt"
@@ -249,7 +250,7 @@ func downloadSongs(
 					}
 
 					if lyricslist.StructuredLyrics != nil {
-						var lyricsBuffer strings.Builder
+						var lyricsBuffer bytes.Buffer
 
 						// Now let's try to rebuild them into an lrc file.
 						// For now, ignore all responses but the first.
@@ -272,7 +273,7 @@ func downloadSongs(
 						}
 						log.Printf("saving %s\n", lyricsFileName)
 						saveToFile(
-							io.NopCloser(strings.NewReader(lyricsBuffer.String())),
+							io.NopCloser(&lyricsBuffer),
 							lyricsFileName,
 						)
 					}
