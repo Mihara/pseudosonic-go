@@ -15,6 +15,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/alitto/pond/v2"
 	"github.com/supersonic-app/go-subsonic/subsonic"
@@ -174,6 +175,13 @@ func downloadSongs(
 	pool := pond.NewPool(poolSize)
 	group := pool.NewGroup()
 
+	// List of files already written,
+	// specifically applies to covers, which
+	// multiple songs per album may trigger the write of.
+	// Should any other per-x thing emerge, like artist.jpg,
+	// it will need to use the same locking.
+	var writtenFiles sync.Map
+
 	for _, song := range sortedSongs {
 
 		group.SubmitErr(func() error {
@@ -294,7 +302,12 @@ func downloadSongs(
 
 			if coverArt {
 				coverFilename := filepath.Join(songPath, coverArtFile)
-				if overwrite || !fileExists(coverFilename) {
+
+				_, alreadyWritten := writtenFiles.LoadOrStore(
+					coverFilename, true,
+				)
+
+				if !alreadyWritten && (overwrite || !fileExists(coverFilename)) {
 					img, err := client.GetCoverArt(song.AlbumID, map[string]string{
 						"size": strconv.Itoa(coverArtSize),
 					})
@@ -302,6 +315,9 @@ func downloadSongs(
 						log.Printf("failed to get cover art image for %s: %v", songFile, err)
 						return err
 					}
+
+					log.Printf("saving %s", coverFilename)
+
 					if err := saveToImage(img, coverFilename, coverSquare); err != nil {
 						log.Printf("failed to save cover art image for %s: %v", songFile, err)
 						return err
