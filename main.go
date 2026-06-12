@@ -211,30 +211,29 @@ func downloadSongs(
 
 			songFile := filepath.Join(songPath, songFileName)
 
-			if !overwrite && fileExists(songFile) {
-				return nil
-			}
+			if overwrite || !fileExists(songFile) {
 
-			var rc io.ReadCloser
+				var rc io.ReadCloser
 
-			if passthrough {
+				if passthrough {
 
-				log.Printf("downloading %s\n", songFile)
-				rc, err = client.Download(song.ID)
+					log.Printf("downloading %s\n", songFile)
+					rc, err = client.Download(song.ID)
 
-			} else {
+				} else {
 
-				log.Printf("transcoding %s\n", songFile)
-				rc, err = client.Stream(song.ID, map[string]string{
-					"maxBitRate": strconv.Itoa(targetBitrate),
-					"format":     targetFormat,
-				})
+					log.Printf("transcoding %s\n", songFile)
+					rc, err = client.Stream(song.ID, map[string]string{
+						"maxBitRate": strconv.Itoa(targetBitrate),
+						"format":     targetFormat,
+					})
 
-			}
+				}
 
-			if err = saveToFile(rc, songFile); err != nil {
-				log.Printf("failed to write song to file %s: %v", songFile, err)
-				return err
+				if err = saveToFile(rc, songFile); err != nil {
+					log.Printf("failed to write song to file %s: %v", songFile, err)
+					return err
+				}
 			}
 
 			// Write lyrics if available and configured to.
