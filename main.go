@@ -284,7 +284,7 @@ func downloadSongs(
 
 			if coverArt {
 				coverFilename := filepath.Join(songPath, coverArtFile)
-				if !fileExists(coverFilename) {
+				if overwrite || !fileExists(coverFilename) {
 					img, err := client.GetCoverArt(song.AlbumID, map[string]string{
 						"size": strconv.Itoa(coverArtSize),
 					})
