@@ -33,6 +33,8 @@ pseudosonic-go [-c <config filename>] [<profile name, or several>]
 
 The program is capable of downloading your favorited songs, or a specific named playlist, whether a smart playlist or otherwise. The idea is that, at least on Linux, you could configure this program to run when your player is mounted as a writable device, so that it would automatically add any songs you have recently favorited.
 
+**P.S.** Yes, it compiles and runs on Android under [Termux](https://termux.dev/), which is how I run it now, why do you ask? 😉
+
 ## License
 
 This little ditty is released under the terms of WTFPL 4.0
