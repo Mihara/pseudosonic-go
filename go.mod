@@ -1,6 +1,6 @@
 module pseudosonic-go
 
-go 1.26.4
+go 1.26.0
 
 require (
 	github.com/flytam/filenamify v1.2.0
@@ -8,7 +8,7 @@ require (
 	gopkg.in/ini.v1 v1.67.3
 )
 
-require golang.org/x/image v0.39.0
+require golang.org/x/image v0.41.0
 
 require github.com/alitto/pond/v2 v2.7.1
 
