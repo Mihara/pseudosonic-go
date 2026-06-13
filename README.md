@@ -19,19 +19,22 @@ This version, rewritten from the ground up in Go, has the benefit of being much 
 1. This has only been tested with Navidrome, and may unknowingly depend on one or another of its idiosyncrasies.
 2. Downloaded files are saved as an `<artist>/<album>/<disc>-<track> <song name>.<format extension>` directory tree, according to their tags, rather than directory locations on the server, which may or may not be what you wanted.
 3. It's on you to configure the server to transcode into the format(s) you wish to transcode into.
-4. If you're using a server ran by someone else, be sure to ask them for the appropriate value for the `workers` configuration parameter, which sets how many simultaneous transcodes the program will request.
-5. The program creates temporary files in the destination directories while it's working, to prevent incomplete transcodes and the like. Upon completion of the job, the files are renamed to their correct names. If you manually interrupt the program before it can finish, it's on you to delete the `*.tmp` files.
+4. If you're using a server managed by someone else, be sure to ask them for the appropriate value for the `workers` configuration parameter, which sets how many simultaneous transcode/download jobs the program will create.
+5. The program creates temporary files in the destination directories while it's working, to prevent incomplete transcodes and the like. Upon completion of the job, the files are renamed to their correct names. If you manually interrupt the program before it can finish, or if it somehow dies before it is done due to a transient network error, it's on you to delete the `*.tmp` files.
 
 ## Usage
 
-1. Copy `config.example.ini` to `config.ini` and edit that to fit your situation. Most of the documentation is in fact in this file, since almost all of the program's functions are controlled through configuration. By default, the program looks for `config.ini` in current directory, but you can supply a different filename on command line.
+1. Copy `config.example.ini` to `config.ini` and edit that to fit your situation. Most of the documentation is in fact in this file, since almost all of the program's functions are controlled through configuration.
 2. Run and wait. The command is
 
 ```shell
-pseudosonic-go [-c <config filename>] [<profile name, or several>]
+pseudosonic-go [-c <config filename>] [-o] [<profile name, or several>]
 ```
 
-The program is capable of downloading your favorited songs, or a specific named playlist, whether a smart playlist or otherwise. The idea is that, at least on Linux, you could configure this program to run when your player is mounted as a writable device, so that it would automatically add any songs you have recently favorited.
+* `-c` config option allows you to supply a specific configuration file name. By default, the program looks for `config.ini` in current directory.
+* `-o` allows you to temporarily force overwrite mode for this specific run. This applies to all profiles, so beware.
+
+The program is capable of downloading your favorited songs, or a specific named playlist, whether a smart playlist or otherwise. It is possible to have multiple "profiles" specifying how to transcode/download songs and where to put them, doing the job for multiple kinds of target player simultaneously, or selecting from one configuration file as needed. The idea is that, at least on Linux, you could configure this program to run automatically when your player is mounted as a writable device, so that it would simply add any songs you have recently favorited.
 
 **P.S.** Yes, it compiles and runs on Android under [Termux](https://termux.dev/), which is how I run it now, why do you ask? 😉
 
