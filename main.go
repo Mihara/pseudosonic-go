@@ -109,6 +109,7 @@ func downloadSongs(
 	client *subsonic.Client,
 	poolSize int,
 	doLyrics bool,
+	forceOverwrite bool,
 ) {
 	// So, new rules.
 
@@ -122,7 +123,7 @@ func downloadSongs(
 
 	var err error
 
-	overwrite := profile.Key("overwrite").MustBool(false)
+	overwrite := profile.Key("overwrite").MustBool(false) || forceOverwrite
 	coverArt := profile.Key("coverart").MustBool(false)
 
 	coverArtSize := profile.Key("coverart_size").MustInt(512)
@@ -342,6 +343,8 @@ func main() {
 	configFile := flag.String("config", "config.ini", "Configuration file to use.")
 	showHelp := flag.Bool("h", false, "Show this help message")
 
+	forceOverwrite := flag.Bool("o", false, "Force overwrite on this run")
+
 	// Customize usage
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] [arguments]\n\n", os.Args[0])
@@ -408,6 +411,12 @@ func main() {
 		runtime.NumCPU(),
 	)
 
+	log.Printf("number of simultaneous download/transcode tasks: %d", poolSize)
+
+	if *forceOverwrite {
+		log.Printf("overwrite forced to true for all profiles")
+	}
+
 	for _, profile := range cfg.Sections() {
 		if profile.Name() == "SERVER" || profile.Name() == "DEFAULT" {
 			continue
@@ -429,7 +438,8 @@ func main() {
 
 		doLyrics := lyricsSupported && profile.Key("lrc_lyrics").MustBool(false)
 
-		downloadSongs(profile, songs, &client, poolSize, doLyrics)
+		downloadSongs(profile, songs, &client,
+			poolSize, doLyrics, *forceOverwrite)
 
 	}
 
