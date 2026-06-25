@@ -22,6 +22,16 @@ import (
 	"gopkg.in/ini.v1"
 )
 
+type LyricsMode string
+
+const (
+	LyricsModeNone    = "no"
+	LyricsModeFlat    = "flat"
+	LyricsModeOmit    = "omit"
+	LyricsModeText    = "text"
+	LyricsModeTextTxt = "text.txt"
+)
+
 func fetchProfile(
 	profile *ini.Section,
 	client *subsonic.Client,
@@ -108,7 +118,7 @@ func downloadSongs(
 	songs map[string]*subsonic.Child,
 	client *subsonic.Client,
 	poolSize int,
-	doLyrics bool,
+	lyricMode LyricsMode,
 	forceOverwrite bool,
 ) {
 	// So, new rules.
@@ -161,7 +171,7 @@ func downloadSongs(
 		)
 	}
 
-	log.Printf("will save lyrics: %t", doLyrics)
+	log.Printf("lyrics processing mode: %s", lyricMode)
 
 	// Iterate in sorted order.
 	// We actually only needed a map in case
@@ -246,11 +256,17 @@ func downloadSongs(
 			}
 
 			// Write lyrics if available and configured to.
-			if doLyrics {
+			if lyricMode != LyricsModeNone {
 
-				lyricsFileName := filepath.Join(songPath, songBaseName+".lrc")
+				lyricsFileNameLrc := filepath.Join(songPath,
+					songBaseName+".lrc")
+				lyricsFileNameTxt := filepath.Join(songPath,
+					songBaseName+".txt")
 
-				if overwrite || !fileExists(lyricsFileName) {
+				if overwrite ||
+					(!fileExists(lyricsFileNameLrc) &&
+						!fileExists(lyricsFileNameTxt)) {
+
 					lyricslist, err := client.GetLyricsBySongId(song.ID)
 					if err != nil {
 						log.Printf(
@@ -260,16 +276,18 @@ func downloadSongs(
 						return err
 					}
 
-					if lyricslist.StructuredLyrics != nil {
+					if len(lyricslist.StructuredLyrics) > 0 {
 						var lyricsBuffer bytes.Buffer
 
 						// Now let's try to rebuild them into an lrc file.
-						// For now, ignore all responses but the first.
-						if len(lyricslist.StructuredLyrics) > 0 {
-							chunk := lyricslist.StructuredLyrics[0]
-							// Regardless of whether the lyrics are synced or
-							// not, the structure is the same, so we'll default
-							// to saving the lyrics with times as given.
+						// For now, ignore all responses but the first,
+						// as I'm not sure navidrome even can return more
+						// than one.
+						chunk := lyricslist.StructuredLyrics[0]
+
+						switch {
+						case chunk.Synced || lyricMode == LyricsModeFlat:
+
 							if chunk.DisplayTitle != "" {
 								fmt.Fprintf(&lyricsBuffer,
 									"[ti:%s]\n",
@@ -282,6 +300,7 @@ func downloadSongs(
 									chunk.DisplayArtist,
 								)
 							}
+
 							for _, line := range chunk.Lines {
 								lyricsBuffer.WriteString(
 									LRCStamp(line.Start + chunk.Offset),
@@ -289,12 +308,31 @@ func downloadSongs(
 								lyricsBuffer.WriteString(line.Text)
 								lyricsBuffer.WriteString("\n")
 							}
+
+						case !chunk.Synced && lyricMode == LyricsModeOmit:
+						// Do nothing if the mode is omit and the lyric is not timed.
+						case !chunk.Synced &&
+							(lyricMode == LyricsModeText ||
+								lyricMode == LyricsModeTextTxt):
+							for _, line := range chunk.Lines {
+								lyricsBuffer.WriteString(line.Text)
+								lyricsBuffer.WriteString("\n")
+							}
 						}
-						log.Printf("saving %s\n", lyricsFileName)
-						saveToFile(
-							io.NopCloser(&lyricsBuffer),
-							lyricsFileName,
-						)
+
+						if lyricsBuffer.Len() > 0 {
+
+							finalFilename := lyricsFileNameLrc
+							if !chunk.Synced && lyricMode == LyricsModeTextTxt {
+								finalFilename = lyricsFileNameTxt
+							}
+
+							log.Printf("saving %s\n", finalFilename)
+							saveToFile(
+								io.NopCloser(&lyricsBuffer),
+								finalFilename,
+							)
+						}
 					}
 				}
 			}
@@ -436,7 +474,25 @@ func main() {
 
 		songs := fetchProfile(profile, &client)
 
-		doLyrics := lyricsSupported && profile.Key("lrc_lyrics").MustBool(false)
+		var doLyrics LyricsMode = LyricsModeNone
+		if lyricsSupported {
+			profileField := profile.Key("lrc_lyrics").MustString("no")
+			if profileField != "no" {
+				doLyrics = LyricsModeFlat
+			}
+			for _, ls := range []LyricsMode{
+				LyricsModeNone,
+				LyricsModeOmit,
+				LyricsModeFlat,
+				LyricsModeText,
+				LyricsModeTextTxt,
+			} {
+				if profileField == string(ls) {
+					doLyrics = ls
+					break
+				}
+			}
+		}
 
 		downloadSongs(profile, songs, &client,
 			poolSize, doLyrics, *forceOverwrite)
