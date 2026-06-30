@@ -118,7 +118,7 @@ func downloadSongs(
 	songs map[string]*subsonic.Child,
 	client *subsonic.Client,
 	poolSize int,
-	lyricMode LyricsMode,
+	lyricsSupported bool,
 	forceOverwrite bool,
 ) {
 	// So, new rules.
@@ -169,6 +169,26 @@ func downloadSongs(
 			"supported formats: %s.",
 			strings.Join(supportedFormats, ", "),
 		)
+	}
+
+	var lyricMode LyricsMode = LyricsModeNone
+	if lyricsSupported {
+		profileField := profile.Key("lrc_lyrics").MustString("no")
+		if profileField != "no" {
+			lyricMode = LyricsModeFlat
+		}
+		for _, ls := range []LyricsMode{
+			LyricsModeNone,
+			LyricsModeOmit,
+			LyricsModeFlat,
+			LyricsModeText,
+			LyricsModeTextTxt,
+		} {
+			if profileField == string(ls) {
+				lyricMode = ls
+				break
+			}
+		}
 	}
 
 	log.Printf("lyrics processing mode: %s", lyricMode)
@@ -474,28 +494,8 @@ func main() {
 
 		songs := fetchProfile(profile, &client)
 
-		var doLyrics LyricsMode = LyricsModeNone
-		if lyricsSupported {
-			profileField := profile.Key("lrc_lyrics").MustString("no")
-			if profileField != "no" {
-				doLyrics = LyricsModeFlat
-			}
-			for _, ls := range []LyricsMode{
-				LyricsModeNone,
-				LyricsModeOmit,
-				LyricsModeFlat,
-				LyricsModeText,
-				LyricsModeTextTxt,
-			} {
-				if profileField == string(ls) {
-					doLyrics = ls
-					break
-				}
-			}
-		}
-
 		downloadSongs(profile, songs, &client,
-			poolSize, doLyrics, *forceOverwrite)
+			poolSize, lyricsSupported, *forceOverwrite)
 
 	}
 
