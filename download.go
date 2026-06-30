@@ -19,9 +19,117 @@ import (
 	"gopkg.in/ini.v1"
 )
 
-func downloadSongs(
+type LyricsMode string
+
+const (
+	LyricsModeNone    = "no"
+	LyricsModeFlat    = "flat"
+	LyricsModeOmit    = "omit"
+	LyricsModeText    = "text"
+	LyricsModeTextTxt = "text.txt"
+)
+
+func fetchSongList(
 	profile *ini.Section,
-	songs map[string]*subsonic.Child,
+	client *subsonic.Client,
+) ([]*subsonic.Child, string) {
+
+	playlist := profile.Key("playlist").String()
+
+	// The most used branch, favorites.
+	if playlist == "" {
+
+		songs := make(map[string]*subsonic.Child)
+
+		// These are made a lot easier by closures.
+		fetchSong := func(song *subsonic.Child) {
+			if song.IsDir || song.IsVideo {
+				return
+			}
+			songs[song.ID] = song
+		}
+
+		// I don't need to remember information about individual albums with
+		// the Go API: song objects contain everything I need.
+		fetchAlbum := func(album *subsonic.AlbumID3) {
+			for _, song := range album.Song {
+				fetchSong(song)
+			}
+		}
+
+		log.Println("collecting favorites...")
+
+		// The three kinds of favorites.
+		favorites, err := client.GetStarred2(map[string]string{})
+		if err != nil {
+			log.Fatalf("failed when getting favorites: %v", err)
+		}
+
+		// Starred artists mean we download completely
+		// every album they are linked to,
+		// except if the album is flagged as compilation,
+		// since that can and probably does contain
+		// lots of other artists.
+		for _, artist := range favorites.Artist {
+			for _, album := range artist.Album {
+				if !album.IsCompilation {
+					fetchAlbum(album)
+				}
+			}
+		}
+
+		// Starred albums and songs, however, are unambiguous.
+		for _, album := range favorites.Album {
+			fetchAlbum(album)
+		}
+		for _, song := range favorites.Song {
+			fetchSong(song)
+		}
+
+		// Return a sorted list: Favorites cannot have an order
+		sortedSongs := slices.SortedFunc(maps.Values(songs),
+			func(a, b *subsonic.Child) int {
+				return cmp.Compare(a.Path, b.Path)
+			})
+
+		return sortedSongs, ""
+
+	}
+
+	// Playlists can have an order. More importantly, they
+	// can legitimately have one song more than once in them.
+	// So we don't involve a map.
+
+	var songs []*subsonic.Child
+
+	log.Printf("collecting playlist '%s'", playlist)
+
+	playlists, err := client.GetPlaylists(map[string]string{})
+	if err != nil {
+		log.Fatalf("failed when requesting playlists: %v", err)
+	}
+
+	for _, playlistItem := range playlists {
+		if playlistItem.Name == playlist {
+			thatPlaylist, err := client.GetPlaylist(playlistItem.ID)
+			if err != nil {
+				log.Fatalf("failed when retreiving playlist %s: %v", playlist, err)
+			}
+
+			for _, song := range thatPlaylist.Entry {
+				if !song.IsDir && !song.IsVideo {
+					songs = append(songs, song)
+				}
+			}
+			return songs, thatPlaylist.ID
+		}
+	}
+
+	return nil, ""
+}
+
+func downloadProfile(
+	profile *ini.Section,
 	client *subsonic.Client,
 	poolSize int,
 	lyricsSupported bool,
@@ -38,6 +146,9 @@ func downloadSongs(
 	// into the given format and bitrate.
 
 	var err error
+
+	flattenTree := profile.Key("flatten").MustBool(false)
+	log.Printf("flat tree mode: %t", flattenTree)
 
 	overwrite := profile.Key("overwrite").MustBool(false) || forceOverwrite
 	coverArt := profile.Key("coverart").MustBool(false)
@@ -99,14 +210,7 @@ func downloadSongs(
 
 	log.Printf("lyrics processing mode: %s", lyricMode)
 
-	// Iterate in sorted order.
-	// We actually only needed a map in case
-	// a song makes it into the list for two separate reasons,
-	// by the time we're here we use it as a slice.
-	sortedSongs := slices.SortedFunc(maps.Values(songs),
-		func(a, b *subsonic.Child) int {
-			return cmp.Compare(a.Path, b.Path)
-		})
+	songs, rootID := fetchSongList(profile, client)
 
 	// Create a pool for our work.
 	pool := pond.NewPool(poolSize)
@@ -119,15 +223,21 @@ func downloadSongs(
 	// it will need to use the same locking.
 	var writtenFiles sync.Map
 
-	for _, song := range sortedSongs {
+	for idx, song := range songs {
 
 		group.SubmitErr(func() error {
 
-			songPath := filepath.Join(
-				profile.Key("music_dir").String(),
-				legalize(song.DisplayAlbumArtist),
-				legalize(song.Album),
-			)
+			var songPath string
+
+			if !flattenTree {
+				songPath = filepath.Join(
+					profile.Key("music_dir").String(),
+					legalize(song.DisplayAlbumArtist),
+					legalize(song.Album),
+				)
+			} else {
+				songPath = profile.Key("music_dir").String()
+			}
 
 			if err = os.MkdirAll(songPath, 0775); err != nil {
 				log.Fatalf("could not create directory %s: %v", songPath, err)
@@ -145,12 +255,20 @@ func downloadSongs(
 				ext = song.Suffix
 			}
 
-			songBaseName := legalize(fmt.Sprintf(
-				"%02d-%02d %s",
-				song.DiscNumber,
-				song.Track,
-				song.Title,
-			))
+			var songBaseName string
+			if !flattenTree {
+				songBaseName = legalize(fmt.Sprintf(
+					"%02d-%02d %s",
+					song.DiscNumber,
+					song.Track,
+					song.Title,
+				))
+			} else {
+				songBaseName = legalize(fmt.Sprintf(
+					"%04d %s", idx+1,
+					song.Title,
+				))
+			}
 
 			songFileName := fmt.Sprintf("%s.%s", songBaseName, ext)
 
@@ -265,7 +383,7 @@ func downloadSongs(
 
 			// Now handle cover art.
 
-			if coverArt {
+			if coverArt && !flattenTree {
 				coverFilename := filepath.Join(songPath, coverArtFile)
 
 				_, alreadyWritten := writtenFiles.LoadOrStore(
@@ -294,6 +412,26 @@ func downloadSongs(
 			return nil
 		})
 
+	}
+
+	// If we have a rootID, i.e. were processing a playlist,
+	// and are in flat mode, save the cover for the batch.
+	if coverArt && flattenTree && rootID != "" {
+		coverFilename := filepath.Join(profile.Key("music_dir").String(), coverArtFile)
+		img, err := client.GetCoverArt(rootID, map[string]string{
+			"size": strconv.Itoa(coverArtSize),
+		})
+		if err != nil {
+			log.Printf("failed to get cover art image for profile: %v", err)
+		}
+
+		if img != nil {
+			log.Printf("saving %s", coverFilename)
+
+			if err := saveToImage(img, coverFilename, coverSquare); err != nil {
+				log.Fatalf("failed to save cover art image for profile: %v", err)
+			}
+		}
 	}
 
 	err = group.Wait()

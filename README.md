@@ -17,10 +17,9 @@ This version, rewritten from the ground up in Go, has the benefit of being much 
 ## Caveats
 
 1. This has only been tested with Navidrome, and may unknowingly depend on one or another of its idiosyncrasies.
-2. Downloaded files are saved as an `<artist>/<album>/<disc>-<track> <song name>.<format extension>` directory tree, according to their tags, rather than directory locations on the server, which may or may not be what you wanted.
-3. It's on you to configure the server to transcode into the format(s) you wish to transcode into.
-4. If you're using a server managed by someone else, be sure to ask them for the appropriate value for the `workers` configuration parameter, which sets how many simultaneous transcode/download jobs the program will create.
-5. The program creates temporary files in the destination directories while it's working, to prevent incomplete transcodes and the like. Upon completion of the job, the files are renamed to their correct names. If you manually interrupt the program before it can finish, or if it somehow dies before it is done due to a transient network error, it's on you to delete the `*.tmp` files.
+2. It's on you to configure the server to transcode into the format(s) you wish to transcode into.
+3. If you're using a server managed by someone else, be sure to ask them for the appropriate value for the `workers` configuration parameter, which sets how many simultaneous transcode/download jobs the program will create.
+4. The program creates temporary files in the destination directories while it's working, to prevent incomplete transcodes and the like. Upon completion of the job, the files are renamed to their correct names. If you manually interrupt the program before it can finish, or if it somehow dies before it is done due to a transient network error, it's on you to delete the `*.tmp` files.
 
 ## Usage
 

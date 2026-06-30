@@ -13,97 +13,6 @@ import (
 	"gopkg.in/ini.v1"
 )
 
-type LyricsMode string
-
-const (
-	LyricsModeNone    = "no"
-	LyricsModeFlat    = "flat"
-	LyricsModeOmit    = "omit"
-	LyricsModeText    = "text"
-	LyricsModeTextTxt = "text.txt"
-)
-
-func fetchProfile(
-	profile *ini.Section,
-	client *subsonic.Client,
-) map[string]*subsonic.Child {
-
-	songs := make(map[string]*subsonic.Child)
-
-	// These are made a lot easier by closures.
-	fetchSong := func(song *subsonic.Child) {
-		if song.IsDir || song.IsVideo {
-			return
-		}
-		songs[song.ID] = song
-	}
-
-	// I don't need to remember information about individual albums with
-	// the Go API: song objects contain everything I need.
-	fetchAlbum := func(album *subsonic.AlbumID3) {
-		for _, song := range album.Song {
-			fetchSong(song)
-		}
-	}
-
-	playlist := profile.Key("playlist").String()
-	if playlist == "" {
-		log.Println("collecting favorites...")
-
-		// The three kinds of favorites.
-		favorites, err := client.GetStarred2(map[string]string{})
-		if err != nil {
-			log.Fatalf("failed when getting favorites: %v", err)
-		}
-
-		// Starred artists mean we download completely
-		// every album they are linked to,
-		// except if the album is flagged as compilation,
-		// since that can and probably does contain
-		// lots of other artists.
-		for _, artist := range favorites.Artist {
-			for _, album := range artist.Album {
-				if !album.IsCompilation {
-					fetchAlbum(album)
-				}
-			}
-		}
-
-		// Starred albums and songs, however, are unambiguous.
-		for _, album := range favorites.Album {
-			fetchAlbum(album)
-		}
-		for _, song := range favorites.Song {
-			fetchSong(song)
-		}
-
-	} else {
-
-		log.Printf("collecting playlist '%s'", playlist)
-
-		playlists, err := client.GetPlaylists(map[string]string{})
-		if err != nil {
-			log.Fatalf("failed when requesting playlists: %v", err)
-		}
-
-		for _, playlistItem := range playlists {
-			if playlistItem.Name == playlist {
-				thatPlaylist, err := client.GetPlaylist(playlistItem.ID)
-				if err != nil {
-					log.Fatalf("failed when retreiving playlist %s: %v", playlist, err)
-				}
-				for _, song := range thatPlaylist.Entry {
-					fetchSong(song)
-				}
-				break
-			}
-		}
-
-	}
-
-	return songs
-}
-
 func main() {
 
 	configFile := flag.String("config", "config.ini", "Configuration file to use.")
@@ -200,9 +109,7 @@ func main() {
 
 		log.Printf("executing profile: %s\n", profile.Name())
 
-		songs := fetchProfile(profile, &client)
-
-		downloadSongs(profile, songs, &client,
+		downloadProfile(profile, &client,
 			poolSize, lyricsSupported, *forceOverwrite)
 
 	}
