@@ -27,10 +27,10 @@ This version, rewritten from the ground up in Go, has the benefit of being much 
 2. Run and wait. The command is
 
 ```shell
-pseudosonic-go [-c <config filename>] [-o] [<profile name, or several>]
+pseudosonic-go [-config <config filename>] [-o] [<profile name, or several>]
 ```
 
-* `-c` config option allows you to supply a specific configuration file name. By default, the program looks for `config.ini` in current directory.
+* `-config` config option allows you to supply a specific configuration file name. By default, the program looks for `config.ini` in current directory.
 * `-o` allows you to temporarily force overwrite mode for this specific run. This applies to all profiles, so beware.
 
 The program is capable of downloading your favorited songs, or a specific named playlist, whether a smart playlist or otherwise. It is possible to have multiple "profiles" specifying how to transcode/download songs and where to put them, doing the job for multiple kinds of target player simultaneously, or selecting from one configuration file as needed. The idea is that, at least on Linux, you could configure this program to run automatically when your player is mounted as a writable device, so that it would simply add any songs you have recently favorited.
