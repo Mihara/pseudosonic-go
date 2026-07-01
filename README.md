@@ -40,6 +40,7 @@ The program is capable of downloading your favorited songs, or a specific named 
 On a Linux system with systemd, you can do this sort of thing to invoke sync automatically when you plug your player in:
 
 `~/.config/systemd/user/my-player.path`:
+
 ```ini
 [Unit]
 Description=Watch for MYPLAYER mount
@@ -54,6 +55,7 @@ WantedBy=default.target
 ```
 
 `~/.config/systemd/user/sync-my-player.service`:
+
 ```ini
 [Unit]
 Description=Launch pseudosonic to sync favorites on the insert of MYPLAYER drive.
@@ -70,6 +72,7 @@ Environment="XDG_RUNTIME_DIR=%t"
 ```
 
 `~/.config/pseudosonic/sync-player`:
+
 ```bash
 #!/bin/bash
 
