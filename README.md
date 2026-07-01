@@ -17,7 +17,7 @@ This version, rewritten from the ground up in Go, has the benefit of being much 
 ## Caveats
 
 1. This has only been tested with Navidrome, and may unknowingly depend on one or another of its idiosyncrasies.
-2. It's on you to configure the server to transcode into the format(s) you wish to transcode into.
+2. It's on you to configure the server to transcode into the format(s) you wish to transcode into. If you did not have a transcoding command configured for a format you planned to use, the results can be unexpected and hard to diagnose.
 3. If you're using a server managed by someone else, be sure to ask them for the appropriate value for the `workers` configuration parameter, which sets how many simultaneous transcode/download jobs the program will create.
 4. The program creates temporary files in the destination directories while it's working, to prevent incomplete transcodes and the like. Upon completion of the job, the files are renamed to their correct names. If you manually interrupt the program before it can finish, or if it somehow dies before it is done due to a transient network error, it's on you to delete the `*.tmp` files.
 
@@ -35,7 +35,58 @@ pseudosonic-go [-config <config filename>] [-o] [<profile name, or several>]
 
 The program is capable of downloading your favorited songs, or a specific named playlist, whether a smart playlist or otherwise. It is possible to have multiple "profiles" specifying how to transcode/download songs and where to put them, doing the job for multiple kinds of target player simultaneously, or selecting from one configuration file as needed. The idea is that, at least on Linux, you could configure this program to run automatically when your player is mounted as a writable device, so that it would simply add any songs you have recently favorited.
 
-**P.S.** Yes, it compiles and runs on Android under [Termux](https://termux.dev/), which is how I run it now, why do you ask? 😉
+## Running automatically
+
+On a Linux system with systemd, you can do this sort of thing to invoke sync automatically when you plug your player in:
+
+`~/.config/systemd/user/my-player.path`:
+```ini
+[Unit]
+Description=Watch for MYPLAYER mount
+After=local-fs.target
+
+[Path]
+PathExists=/media/%u/MYPLAYER
+Unit=sync-my-player.service
+
+[Install]
+WantedBy=default.target
+```
+
+`~/.config/systemd/user/sync-my-player.service`:
+```ini
+[Unit]
+Description=Launch pseudosonic to sync favorites on the insert of MYPLAYER drive.
+After=local-fs.target
+RequiresMountsFor=/media/%u/MYPLAYER
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/gnome-terminal -- /home/%u/.config/pseudosonic/sync-player
+Environment="DISPLAY=:0"
+Environment="WAYLAND_DISPLAY=wayland-0"
+Environment="XDG_RUNTIME_DIR=%t"
+```
+
+`~/.config/pseudosonic/sync-player`:
+```bash
+#!/bin/bash
+
+echo === Synchronizing favorites to the player.
+read -p "== Press enter to begin."
+
+# Invoke pseudosonic with the config you presumably customized.
+pseudosonic-go -config $HOME/.config/pseudosonic/config.ini player
+
+# Clean off all the temporary files just in case something went wrong.
+find /media/$USER/MYPLAYER -name '*.tmp' -delete
+
+# You could even unmount it here.
+echo === Job done, safe to unmount now.
+```
+
+**P.S.** Yes, it compiles and runs on Android under [Termux](https://termux.dev/), which is how I run it now for syncing Poweramp library, why do you ask? 😉
 
 ## License
 
