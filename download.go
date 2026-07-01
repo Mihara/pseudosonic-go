@@ -413,7 +413,7 @@ func downloadProfile(
 
 					log.Printf("saving %s", coverFilename)
 
-					if err := saveToImage(img, coverFilename, coverSquare); err != nil {
+					if err := saveToImage(img, coverFilename, coverSquare, coverArtSize); err != nil {
 						log.Printf("failed to save cover art image for %s: %v", songFile, err)
 						return err
 					}
@@ -440,7 +440,7 @@ func downloadProfile(
 		if img != nil {
 			log.Printf("saving %s", coverFilename)
 
-			if err := saveToImage(img, coverFilename, coverSquare); err != nil {
+			if err := saveToImage(img, coverFilename, coverSquare, coverArtSize); err != nil {
 				log.Fatalf("failed to save cover art image for profile: %v", err)
 			}
 		}

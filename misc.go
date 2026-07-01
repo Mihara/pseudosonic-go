@@ -99,7 +99,7 @@ func MakeSquare(img image.Image) image.Image {
 	return imaging.OverlayCenter(background, img, 1.0)
 }
 
-func saveToImage(img image.Image, path string, square bool) error {
+func saveToImage(img image.Image, path string, square bool, size int) error {
 	if img == nil {
 		return fmt.Errorf("image is nil")
 	}
@@ -132,6 +132,10 @@ func saveToImage(img image.Image, path string, square bool) error {
 	if square {
 		imgToSave = MakeSquare(img)
 	}
+
+	// Navidrome specifically returns a placeholder cover that ignores
+	// size limits, so we need to squish it.
+	imgToSave = imaging.Fit(imgToSave, size, size, imaging.Lanczos)
 
 	var encodeErr error
 	switch ext {
