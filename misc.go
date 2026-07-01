@@ -177,13 +177,22 @@ func legalize(s string) string {
 	})
 
 	// Also, on FAT, file and directory
-	// names cannot end in a period...
+	// names cannot end in a period
 	runes := []rune(ns)
 	if len(runes) > 0 && runes[len(runes)-1] == '.' {
 		runes[len(runes)-1] = '_'
 	}
 
-	return string(runes)
+	// Fat32 also disallows names ending in space,
+	// and in general those are a bad bad idea anyway.
+	final := strings.Trim(string(runes), " ")
+
+	// Covering all the bases.
+	if final == "" {
+		return "_"
+	}
+
+	return final
 }
 
 func LRCStamp(ms int) string {
