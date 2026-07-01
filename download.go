@@ -9,6 +9,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -129,9 +130,9 @@ func fetchSongList(
 }
 
 func downloadProfile(
-	profile *ini.Section,
 	client *subsonic.Client,
-	poolSize int,
+	cfg *ini.File,
+	profileName string,
 	lyricsSupported bool,
 	forceOverwrite bool,
 ) {
@@ -144,6 +145,8 @@ func downloadProfile(
 
 	// Otherwise, working as before, i.e. transcode
 	// into the given format and bitrate.
+
+	profile := cfg.Section(profileName)
 
 	var err error
 
@@ -159,6 +162,15 @@ func downloadProfile(
 
 	targetFormat := profile.Key("format").MustString("mp3")
 	targetBitrate := profile.Key("bitrate").MustInt(128)
+
+	// Pool size can be re-defined per profile.
+	poolSize := profile.Key("workers").MustInt(
+		cfg.Section("SERVER").Key("workers").MustInt(
+			runtime.NumCPU(),
+		),
+	)
+
+	log.Printf("number of simultaneous download/transcode tasks: %d", poolSize)
 
 	log.Printf(
 		"target format: %s, target bitrate: %d kbps, overwrite existing: %t", targetFormat, targetBitrate, overwrite,

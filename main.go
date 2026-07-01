@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"runtime"
 	"slices"
 
 	"github.com/supersonic-app/go-subsonic/subsonic"
@@ -82,12 +81,6 @@ func main() {
 
 	log.Printf("has lyrics support: %t\n", lyricsSupported)
 
-	poolSize := cfg.Section("SERVER").Key("workers").MustInt(
-		runtime.NumCPU(),
-	)
-
-	log.Printf("number of simultaneous download/transcode tasks: %d", poolSize)
-
 	if *forceOverwrite {
 		log.Printf("overwrite forced to true for all profiles")
 	}
@@ -109,8 +102,9 @@ func main() {
 
 		log.Printf("executing profile: %s\n", profile.Name())
 
-		downloadProfile(profile, &client,
-			poolSize, lyricsSupported, *forceOverwrite)
+		downloadProfile(&client,
+			cfg, profile.Name(),
+			lyricsSupported, *forceOverwrite)
 
 	}
 
