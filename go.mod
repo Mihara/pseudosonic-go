@@ -8,7 +8,7 @@ require (
 	gopkg.in/ini.v1 v1.67.3
 )
 
-require golang.org/x/image v0.41.0
+require golang.org/x/image v0.43.0
 
 require github.com/alitto/pond/v2 v2.7.1
 
