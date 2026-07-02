@@ -36,6 +36,10 @@ func fileExists(path string) bool {
 }
 
 func saveToFile(rc io.ReadCloser, path string) error {
+	if rc == nil {
+		return fmt.Errorf("trying to save an empty stream")
+	}
+
 	defer rc.Close()
 
 	if path == "" {
