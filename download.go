@@ -8,6 +8,7 @@ import (
 	"log"
 	"maps"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/alitto/pond/v2"
 	"github.com/supersonic-app/go-subsonic/subsonic"
+	"github.com/valyala/fasttemplate"
 	"gopkg.in/ini.v1"
 )
 
@@ -176,6 +178,31 @@ func downloadProfile(
 		"target format: %s, target bitrate: %d kbps, overwrite existing: %t", targetFormat, targetBitrate, overwrite,
 	)
 
+	var transcoder *fasttemplate.Template
+
+	transcoderCommand := profile.Key("local_transcoder").MustString("")
+
+	if transcoderCommand != "" {
+		log.Printf("local transcoding command: %s", transcoderCommand)
+		transcoder, err = fasttemplate.NewTemplate(
+			transcoderCommand, "{", "}")
+		if err != nil {
+			log.Fatalf("could not compile local transcoder command template: %v", err)
+		}
+	}
+
+	var postprocessor *fasttemplate.Template
+
+	postprocessorCommand := profile.Key("postprocessor").MustString("")
+	if postprocessorCommand != "" {
+		log.Printf("postprocessor command: %s", postprocessorCommand)
+		postprocessor, err = fasttemplate.NewTemplate(
+			postprocessorCommand, "{", "}")
+		if err != nil {
+			log.Fatalf("could not compile postprocessor command template: %v", err)
+		}
+	}
+
 	log.Printf("save cover art: %t", coverArt)
 
 	if coverArt {
@@ -298,17 +325,76 @@ func downloadProfile(
 				} else {
 
 					log.Printf("transcoding %s\n", songFile)
-					rc, err = client.Stream(song.ID, map[string]string{
-						"maxBitRate": strconv.Itoa(targetBitrate),
-						"format":     targetFormat,
-					})
+
+					// When using the local transcoder,
+					// we download the file and feed it to the
+					// local transcoder command instead.
+					if transcoder != nil {
+						rc, err = client.Download(song.ID)
+					} else {
+						rc, err = client.Stream(song.ID, map[string]string{
+							"maxBitRate": strconv.Itoa(targetBitrate),
+							"format":     targetFormat,
+						})
+					}
 
 				}
 
-				if err = saveToFile(rc, songFile); err != nil {
+				// We always save whatever the server returned to disk, but
+				// when local transcoder is used, the name's different.
+				saveFileName := songFile
+
+				if (!passthrough && transcoder != nil) ||
+					(passthrough && postprocessor != nil) {
+					saveFileName = filepath.Join(
+						songPath,
+						fmt.Sprintf("%d-from.%s", idx, song.Suffix),
+					)
+					// Remove the intermediate file on return
+					// and swallow the error.
+					defer os.Remove(saveFileName)
+				}
+
+				if err = saveToFile(rc, saveFileName); err != nil {
 					log.Printf("failed to write song to file %s: %v", songFile, err)
 					return err
 				}
+
+				// If we have a local transcoder, that's where we
+				// actually run it, expecting it to create the destination
+				// file. The source file is deleted on exit
+				// from this worker.
+				if !passthrough && transcoder != nil {
+					params := map[string]interface{}{
+						"from":    saveFileName,
+						"to":      songFile,
+						"bitrate": strconv.Itoa(targetBitrate),
+					}
+					transcodeCommand := transcoder.ExecuteString(params)
+					if err := runCommand(transcodeCommand); err != nil {
+						if exitErr, ok := err.(*exec.ExitError); ok {
+							return fmt.Errorf("local transcoder failed with exit code %d", exitErr.ExitCode())
+						} else {
+							return fmt.Errorf("local transcoder execution error: %w", err)
+						}
+					}
+				}
+				// If we have a postprocessor command, that's where we run it.
+				if passthrough && postprocessor != nil {
+					params := map[string]interface{}{
+						"from": saveFileName,
+						"to":   songFile,
+					}
+					postprocessCommand := postprocessor.ExecuteString(params)
+					if err := runCommand(postprocessCommand); err != nil {
+						if exitErr, ok := err.(*exec.ExitError); ok {
+							return fmt.Errorf("postprocessor failed with exit code %d", exitErr.ExitCode())
+						} else {
+							return fmt.Errorf("postprocessor execution error: %w", err)
+						}
+					}
+				}
+
 			}
 
 			// Write lyrics if available and configured to.

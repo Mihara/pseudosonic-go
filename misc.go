@@ -9,7 +9,9 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	webp "github.com/HugoSmits86/nativewebp"
@@ -208,4 +210,17 @@ func LRCStamp(ms int) string {
 	s := (ms / 1000) % 60
 	cs := (ms / 10) % 100
 	return fmt.Sprintf("[%02d:%02d.%02d]", m, s, cs)
+}
+
+// Run a command in a shell.
+func runCommand(cmdStr string) error {
+	var cmd *exec.Cmd
+
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("cmd", "/C", cmdStr)
+	} else {
+		cmd = exec.Command("sh", "-c", cmdStr)
+	}
+
+	return cmd.Run()
 }
