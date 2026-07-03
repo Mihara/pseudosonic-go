@@ -89,7 +89,11 @@ find /media/$USER/MYPLAYER -name '*.tmp' -delete
 echo === Job done, safe to unmount now.
 ```
 
-**P.S.** Yes, it compiles and runs on Android under [Termux](https://termux.dev/), which is how I run it now for syncing Poweramp library, why do you ask? 😉
+## Advanced usage
+
+It compiles and runs on Android under [Termux](https://termux.dev/), which is how I run it now for syncing Poweramp library. I believe you can use the executable for linux-arm64 directly, though I didn't test it myself yet.
+
+See also the [echo](echo/) directory for an example profile (and associated scripts) for a hands-off transcoding setup for FIIO Snowsky Echo. *(The requirements for Echo Mini are different.)*
 
 ## License
 
