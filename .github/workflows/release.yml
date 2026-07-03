@@ -41,8 +41,7 @@ jobs:
         cp ../../config.example.ini .
         cp ../../README.md .
         cp ../../LICENSE .
-        mkdir echo
-        cp ../../echo/* echo/
+        cp -r ../../echo .
         zip -r ../pseudosonic-go-${{ matrix.goos }}-${{ matrix.goarch }}.zip .
 
     - name: Upload binaries to release
