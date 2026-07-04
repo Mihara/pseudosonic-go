@@ -1,0 +1,16 @@
+[Unit]
+Description=Launch pseudosonic to sync favorites on ECHO_SD insert.
+After=local-fs.target
+RequiresMountsFor=/media/%u/ECHO_SD
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/gnome-terminal -- /home/%u/.config/pseudosonic/sync-player
+Environment="DISPLAY=:0"
+Environment="WAYLAND_DISPLAY=wayland-0"
+Environment="XDG_RUNTIME_DIR=%t"
+# This service remains "running" (even though the file exited)
+# to prevent echo_sd-start.path from running it multiple times.
+# Later on, echo_sd-stop.service shuts it down, so that 
+# it can start again next time you mount the drive.
+RemainAfterExit=yes

@@ -35,63 +35,11 @@ pseudosonic-go [-config <config filename>] [-o] [<profile name, or several>]
 
 The program is capable of downloading your favorited songs, or a specific named playlist, whether a smart playlist or otherwise. It is possible to have multiple "profiles" specifying how to transcode/download songs and where to put them, doing the job for multiple kinds of target player simultaneously, or selecting from one configuration file as needed. The idea is that, at least on Linux, you could configure this program to run automatically when your player is mounted as a writable device, so that it would simply add any songs you have recently favorited.
 
-## Running automatically
-
-On a Linux system with systemd, you can do this sort of thing to invoke sync automatically when you plug your player in:
-
-`~/.config/systemd/user/my-player.path`:
-
-```ini
-[Unit]
-Description=Watch for MYPLAYER mount
-After=local-fs.target
-
-[Path]
-PathExists=/media/%u/MYPLAYER
-Unit=sync-my-player.service
-
-[Install]
-WantedBy=default.target
-```
-
-`~/.config/systemd/user/sync-my-player.service`:
-
-```ini
-[Unit]
-Description=Launch pseudosonic to sync favorites on the insert of MYPLAYER drive.
-After=local-fs.target
-RequiresMountsFor=/media/%u/MYPLAYER
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-ExecStart=/usr/bin/gnome-terminal -- /home/%u/.config/pseudosonic/sync-player
-Environment="DISPLAY=:0"
-Environment="WAYLAND_DISPLAY=wayland-0"
-Environment="XDG_RUNTIME_DIR=%t"
-```
-
-`~/.config/pseudosonic/sync-player`:
-
-```bash
-#!/bin/bash
-
-echo === Synchronizing favorites to the player.
-read -p "== Press enter to begin."
-
-# Invoke pseudosonic with the config you presumably customized.
-pseudosonic-go -config $HOME/.config/pseudosonic/config.ini player
-
-# Clean off all the temporary files just in case something went wrong.
-find /media/$USER/MYPLAYER -name '*.tmp' -delete
-
-# You could even unmount it here.
-echo === Job done, safe to unmount now.
-```
-
 ## Advanced usage
 
-It compiles and runs on Android under [Termux](https://termux.dev/), which is how I run it now for syncing Poweramp library. I believe you can use the executable for linux-arm64 directly, though I didn't test it myself yet.
+On a Linux system with systemd, you can invoke sync automatically when you plug your player in. See [autostart](autostart/) for the example systemd files and script.
+
+Pseudosonic-go compiles and runs on Android under [Termux](https://termux.dev/), which is how I run it now for syncing Poweramp library. You can simply run the release the executable for linux-arm64 directly if you can't be bothered to compile it.
 
 See also the [echo](echo/) directory for an example profile (and associated scripts) for a hands-off transcoding setup for FIIO Snowsky Echo. *(The requirements for Echo Mini are different.)*
 

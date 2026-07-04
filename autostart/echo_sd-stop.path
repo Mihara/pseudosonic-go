@@ -1,0 +1,11 @@
+[Unit]
+Description=Watch for ECHO_SD unmount
+After=local-fs.target
+
+[Path]
+PathChanged=/media/%u/
+Unit=echo_sd-stop.service
+
+[Install]
+WantedBy=default.target
+

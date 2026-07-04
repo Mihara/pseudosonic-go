@@ -1,0 +1,10 @@
+[Unit]
+Description=Watch for ECHO_SD mount
+After=local-fs.target
+
+[Path]
+PathExists=/media/%u/ECHO_SD
+Unit=echo_sd.service
+
+[Install]
+WantedBy=default.target

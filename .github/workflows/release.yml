@@ -42,6 +42,7 @@ jobs:
         cp ../../README.md .
         cp ../../LICENSE .
         cp -r ../../echo .
+        cp -r ../../autostart .
         zip -r ../pseudosonic-go-${{ matrix.goos }}-${{ matrix.goarch }}.zip .
 
     - name: Upload binaries to release

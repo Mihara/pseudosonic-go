@@ -1,0 +1,13 @@
+#!/bin/bash
+
+echo === Synchronizing favorites to the player.
+read -p "== Press enter to begin."
+
+# Invoke pseudosonic with the config you presumably customized.
+pseudosonic-go -config $HOME/.config/pseudosonic/config.ini echo
+
+# Clean off all the temporary files just in case something went wrong.
+find /media/$USER/ECHO_SD -name '*.tmp' -delete
+
+# You could even unmount it here.
+echo === Job done, safe to unmount now.

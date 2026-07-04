@@ -1,0 +1,9 @@
+[Unit]
+Description=Stop main service when ECHO_SD is unmounted
+# Only run if the mount really is gone (avoids stopping at boot before mount ever appeared)
+ConditionPathExists=!/media/%u/ECHO_SD
+
+[Service]
+Type=oneshot
+RemainAfterExit=no
+ExecStart=/bin/sh -c 'if [ ! -d /media/%u/ECHO_SD ]; then /usr/bin/systemctl --user stop echo_sd.service; fi'
