@@ -43,6 +43,7 @@ if [ "$has_video" -gt 0 ]; then
 			-c:v copy \
 			-disposition:v:0 attached_pic \
 			-metadata:s:v:0 comment="Cover (front)" \
+			-map_metadata 0:g \
 			-map_metadata 0:s:a \
 			-movflags +faststart \
 			-y "$output" 2>/dev/null
@@ -52,6 +53,7 @@ if [ "$has_video" -gt 0 ]; then
 		ffmpeg -v quiet -i "$input" \
 			-map 0:a:0 \
 			-c:a aac -b:a "$BITRATE" \
+			-map_metadata 0:g \
 			-map_metadata 0:s:a \
 			-movflags +faststart \
 			-y "$output" 2>/dev/null
@@ -62,6 +64,7 @@ else
 	ffmpeg -v quiet -i "$input" \
 		-map 0:a:0 \
 		-c:a aac -b:a "$BITRATE" \
+		-map_metadata 0:g \
 		-map_metadata 0:s:a \
 		-movflags +faststart \
 		-y "$output" 2>/dev/null
