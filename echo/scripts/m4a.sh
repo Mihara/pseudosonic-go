@@ -45,6 +45,8 @@ if [ "$has_video" -gt 0 ]; then
 			-metadata:s:v:0 comment="Cover (front)" \
 			-map_metadata 0:g \
 			-map_metadata 0:s:a \
+			-metadata comment="" \
+			-metadata:s:a comment="" \
 			-movflags +faststart \
 			-y "$output" 2>/dev/null
 		status=$?
@@ -55,6 +57,8 @@ if [ "$has_video" -gt 0 ]; then
 			-c:a aac -b:a "$BITRATE" \
 			-map_metadata 0:g \
 			-map_metadata 0:s:a \
+			-metadata comment="" \
+			-metadata:s:a comment="" \
 			-movflags +faststart \
 			-y "$output" 2>/dev/null
 		status=$?
@@ -66,6 +70,8 @@ else
 		-c:a aac -b:a "$BITRATE" \
 		-map_metadata 0:g \
 		-map_metadata 0:s:a \
+		-metadata comment="" \
+		-metadata:s:a comment="" \
 		-movflags +faststart \
 		-y "$output" 2>/dev/null
 	status=$?
