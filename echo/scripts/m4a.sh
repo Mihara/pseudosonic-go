@@ -47,6 +47,8 @@ if [ "$has_video" -gt 0 ]; then
 			-map_metadata 0:s:a \
 			-metadata comment="" \
 			-metadata:s:a comment="" \
+			-metadata lyrics="" \
+			-metadata:s:a lyrics="" \
 			-movflags +faststart \
 			-y "$output" 2>/dev/null
 		status=$?
@@ -59,6 +61,8 @@ if [ "$has_video" -gt 0 ]; then
 			-map_metadata 0:s:a \
 			-metadata comment="" \
 			-metadata:s:a comment="" \
+			-metadata lyrics="" \
+			-metadata:s:a lyrics="" \
 			-movflags +faststart \
 			-y "$output" 2>/dev/null
 		status=$?
@@ -72,6 +76,8 @@ else
 		-map_metadata 0:s:a \
 		-metadata comment="" \
 		-metadata:s:a comment="" \
+		-metadata lyrics="" \
+		-metadata:s:a lyrics="" \
 		-movflags +faststart \
 		-y "$output" 2>/dev/null
 	status=$?
