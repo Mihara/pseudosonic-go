@@ -136,6 +136,7 @@ func downloadProfile(
 	cfg *ini.File,
 	profileName string,
 	lyricsSupported bool,
+	transcodingControlSupported bool,
 	forceOverwrite bool,
 ) {
 	// So, new rules.
@@ -314,6 +315,15 @@ func downloadProfile(
 			songFile := filepath.Join(songPath, songFileName)
 
 			if overwrite || !fileExists(songFile) {
+
+				// Now, if the server supports transcoding decisions,
+				// we need to convince it that it should transcode for us,
+				// which means we claim that we only support
+				// target format and target bitrate.
+				if transcodingControlSupported {
+					forceTranscodeDecision(
+						client, song, targetFormat, targetBitrate)
+				}
 
 				var rc io.ReadCloser
 

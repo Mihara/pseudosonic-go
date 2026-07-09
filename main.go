@@ -68,14 +68,17 @@ func main() {
 	}
 
 	lyricsSupported := false
+	transcodingControlSupported := false
 
 	// If err is not nil, extensions are not supported.
 	if extensions, err := client.GetOpenSubsonicExtensions(); err == nil {
-		if slices.IndexFunc(extensions,
-			func(e *subsonic.OpenSubsonicExtension) bool {
-				return e.Name == "songLyrics"
-			}) >= 0 {
-			lyricsSupported = true
+		for _, e := range extensions {
+			switch e.Name {
+			case "songLyrics":
+				lyricsSupported = true
+			case "transcoding":
+				transcodingControlSupported = true
+			}
 		}
 	}
 
@@ -104,7 +107,8 @@ func main() {
 
 		downloadProfile(&client,
 			cfg, profile.Name(),
-			lyricsSupported, *forceOverwrite)
+			lyricsSupported, transcodingControlSupported,
+			*forceOverwrite)
 
 	}
 
