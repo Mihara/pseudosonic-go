@@ -415,7 +415,6 @@ func downloadProfile(
 							"warning, server responds with damaged song lyrics for %s, skipping: %v",
 							songBaseName, err,
 						)
-						lyricslist = nil
 					}
 
 					if lyricslist != nil && len(lyricslist.StructuredLyrics) > 0 {
