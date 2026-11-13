@@ -412,13 +412,13 @@ func downloadProfile(
 					lyricslist, err := client.GetLyricsBySongId(song.ID)
 					if err != nil {
 						log.Printf(
-							"failed when requesting song lyrics for %s: %v",
+							"warning, server responds with damaged song lyrics for %s, skipping: %v",
 							songBaseName, err,
 						)
-						return err
+						lyricslist = nil
 					}
 
-					if len(lyricslist.StructuredLyrics) > 0 {
+					if lyricslist != nil && len(lyricslist.StructuredLyrics) > 0 {
 						var lyricsBuffer bytes.Buffer
 
 						// Now let's try to rebuild them into an lrc file.
